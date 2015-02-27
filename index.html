@@ -30,6 +30,8 @@ var inputStockURL = "http://query.yahooapis.com/v1/public/yql?q=select%20*%20fro
 var parseDate = d3.time.format("%Y-%m-%d").parse;
 var Data; 
 var testxScale;
+var sma5=[];
+
 
 //available info includes Adj_Close, Close, Date, High, Low, Open, Symbol, Volume, date
 d3.json(inputStockURL, function(error, data){
@@ -47,6 +49,37 @@ d3.json(inputStockURL, function(error, data){
 
 	    }	
 	);
+
+
+
+Data.query.results.quote.reverse();
+for(var i=0; i<70; i++){
+	sma5[i]= {};
+	sma5[i].mean= 0;
+	sma5[i].meanDate= new Date();
+	sma5[i].meanDate.setDate(Data.query.results.quote[i*5+2].date.getDate());
+	var sum=0;
+	for(var j=0; j<5; j++){
+		var index= i*5+j;
+		sum= sum+ Data.query.results.quote[index].high;
+	}
+
+	sma5[i].mean= sum/ 5.0;
+}
+
+for(var i=0; i<70; i++){
+	sma5[i].stdDev= 0;
+	var meanDifferences= 0;
+	for(var j=0; j<5; j++){
+		var index= i*5+j;
+		meanDifferences+= (sma5[i].mean-Data.query.results.quote[index].high) *
+							(sma5[i].mean-Data.query.results.quote[index].high);
+	}
+
+	sma5[i].stdDev= Math.sqrt(meanDifferences/ 5.0);
+	
+}
+
 
 	/*Daily High and Low
 	*/
