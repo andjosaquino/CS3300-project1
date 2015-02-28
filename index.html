@@ -61,7 +61,7 @@ for(var i=0; i<70; i++){
 	var sum=0;
 	for(var j=0; j<5; j++){
 		var index= i*5+j;
-		sum= sum+ Data.query.results.quote[index].high;
+		sum= sum+ Data.query.results.quote[index].close;
 	}
 
 	sma5[i].mean= sum/ 5.0;
@@ -72,12 +72,12 @@ for(var i=0; i<70; i++){
 	var meanDifferences= 0;
 	for(var j=0; j<5; j++){
 		var index= i*5+j;
-		meanDifferences+= (sma5[i].mean-Data.query.results.quote[index].high) *
-							(sma5[i].mean-Data.query.results.quote[index].high);
+		meanDifferences+= (sma5[i].mean-Data.query.results.quote[index].close) *
+							(sma5[i].mean-Data.query.results.quote[index].close);
 	}
 
 	sma5[i].stdDev= Math.sqrt(meanDifferences/ 5.0);
-	
+
 }
 
 
