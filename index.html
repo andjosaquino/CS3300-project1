@@ -54,6 +54,7 @@ var parseDate = d3.time.format("%Y-%m-%d").parse;
 var Data; 
 var testxScale;
 var sma5=[];
+
 //available info includes Adj_Close, Close, Date, High, Low, Open, Symbol, Volume, date
 d3.json(inputStockURL, function(error, data){
 	Data = data;
