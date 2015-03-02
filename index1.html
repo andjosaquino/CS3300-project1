@@ -29,7 +29,7 @@
   
   <style>
   /* put a border around the svg element so we can see the coordinate system better. */
-  svg { border: solid black 0px; }
+  svg { border: solid white 0px; }
   h3 {text-align:center;}
     
   .axis path,
@@ -44,6 +44,10 @@
     fill: none;
     stroke-width: 1.7px;
   }
+  .area {
+      fill: lightsteelblue;
+      stroke-width: 0;
+  }
   .overlay {
     fill: none;
     pointer-events: all;
@@ -56,6 +60,14 @@
   .canvas{
     border:1px solid #000000;
     margin-bottom: 100px;
+  }
+  
+  .grid .tick {
+      stroke: #4e4e4e;
+      opacity: 0.7;
+  }
+  .grid path {
+        stroke-width: 0;
   }
   </style>
 
@@ -114,6 +126,10 @@
     var sma5=[];
     //PADDING VALUES
     var bottom_pad = 100;
+	
+	
+	
+	
     //available info includes Adj_Close, Close, Date, High, Low, Open, Symbol, Volume, date
     d3.json(inputStockURL, function(error, data){
       Data = data;
@@ -156,7 +172,6 @@
         function(d) {
            d.mean = +d.mean;
 		   d.stdDev = +d.stdDev;
-		   d.meanDate = +d.meanDate;
           } 
     )
       /*Daily High and Low
@@ -174,9 +189,9 @@
       /*Date Scale (based on startDate and Enddate)
       */
       var data = Data.query.results.quote.reverse();
-      var margin = {top: 50, right: 50, bottom: 200, left:100},
-        width = 1480,
-        height = 620;
+      var margin = {top: 50, right: 100, bottom: 50, left:100},
+        width = 1300,
+        height = 800;
       
       var svg = d3.select('#canvas').append('svg')
         .attr('class', 'chart')
@@ -188,7 +203,7 @@
 	  var timeScale = d3.time.scale()
       .domain(d3.extent(data, function(d) {
             return d.date; }))
-      .range([0,width - margin.left - margin.right]);
+      .range([0,width - margin.top - margin.right]);
       //testxScale = timeScale;
       /*Price Scale (based on maxHigh and minLow)
       */
@@ -203,7 +218,7 @@
           .scale(timeScale)
           .orient('bottom')
           .tickFormat(d3.time.format('%b %Y'))
-          .tickSize(0)
+          .tickSize(5)
           .tickPadding(8);
 		  
       var yAxis = d3.svg.axis()
@@ -211,6 +226,11 @@
           .orient('left')
           .tickSize(2)
           .tickPadding(8);
+		  
+	  var area = d3.svg.area()
+	      .x(function(d) { return timeScale(d.date); })
+	      .y0(height)
+	      .y1(function(d) { return priceScale(d.low); });
       
       //High and Low Lines
       var lineHigh = d3.svg.line()
@@ -227,15 +247,39 @@
           .interpolate("basis")
           .x(function(d) { return timeScale(d.meanDate); })
           .y(function(d) { return priceScale(d.mean); });
+		  
+	  // var smaSD_upper = d3.svg.line()
+	  //           .interpolate("basis")
+	  //           .x(function(d) { return timeScale(d.meanDate); })
+	  //           .y(function(d) { return priceScale(d.mean + d.stdDev); });
+	  //
+	  // var smaSD_lower = d3.svg.line()
+	  //           .interpolate("basis")
+	  //           .x(function(d) { return timeScale(d.meanDate); })
+	  //           .y(function(d) { return priceScale(d.mean - d.stdDev); });
+	  //
+		
+	  	function gridlines_x() {        
+	  	    return d3.svg.axis()
+	  	        .scale(timeScale)
+	  	         .orient("bottom")
+	  	         .ticks(10)
+	  	}
+
+	  	function gridlines_y() {        
+	  	    return d3.svg.axis()
+	  	        .scale(priceScale)
+	  	        .orient("left")
+	  	        .ticks(17)
+	  	}
         
       svg.append('g')
           .attr('class', 'x axis')
           .attr('transform', 'translate(0, ' + (height - margin.top - margin.bottom) + ')')
           .call(xAxis)
           .selectAll("text")
-            .attr("dy", ".25em")
-            .attr("fill", "#4e4e4e")
-            .attr("font-size", ".7em")
+            .attr("fill", "white")
+            .attr("font-size", ".8em")
             .attr("transform","rotate(0)")
             .style("text-anchor", "start");
 			
@@ -244,25 +288,60 @@
             .call(yAxis)
             .selectAll("text")
               .attr("font-size", ".7em")
-              .attr("fill", "#4e4e4e");
+              .attr("fill", "white")
         
-      svg.append("path")
-          .attr("class", "line")
-          .attr("d", lineHigh(data))
-          .attr("stroke-width", 1)
-          .attr("stroke", "#6798c1");
-		  
-      svg.append("path")
-          .attr("class", "line")
-          .attr("d", lineLow(data))
-          .attr("stroke-width", 1)
-          .attr("stroke", "#c72a2a");
-		  
-      svg.append("path")
-	      .attr("d", smaMean(sma5))
-          .attr("class", "line")
-          .attr("stroke-width", 1)
-          .attr("stroke", "yellow");
+	
+	 svg.append("g")         
+        .attr("class", "grid")
+        .attr('transform', 'translate(0, ' + (height - margin.top - margin.bottom) + ')')
+        .call(gridlines_x()
+            .tickSize(-height, 0, 0)
+            .tickFormat("")
+        )
+
+    svg.append("g")         
+        .attr("class", "grid")
+        .call(gridlines_y()
+            .tickSize(-width, 0, 0)
+            .tickFormat("")
+        )
+		
+    svg.append("path")
+        .attr("class", "line")
+        .attr("d", lineHigh(data))
+        .attr("stroke-width", 1)
+        .attr("stroke", "#6798c1");
+	  
+    svg.append("path")
+        .attr("class", "line")
+        .attr("d", lineLow(data))
+        .attr("stroke-width", 1)
+        .attr("stroke", "#c72a2a");
+		
+    svg.append("path")
+      .attr("d", smaMean(sma5))
+        .attr("class", "line")
+        .attr("stroke-width", 500)
+        .attr("stroke", "yellow");
+		
+		
+    // svg.append("path")
+    //   .attr("d", smaSD_upper(sma5))
+    //     .attr("class", "line")
+    //     .attr("stroke-width", 500)
+    //     .attr("stroke", "yellow");
+		
+    // svg.append("path")
+    //   .attr("d", smaSD_lower(sma5))
+    //     .attr("class", "line")
+    //     .attr("stroke-width", 500)
+    //     .attr("stroke", "yellow");
+	  
+
+	
+
+	  
+	
     });
 </script>
 
