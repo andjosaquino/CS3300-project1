@@ -383,7 +383,47 @@
           .attr("y2", function(d) { return priceScale(d.low); })
           .attr("stroke", function(d){ return d.open > d.close ? "red" : "green"; });
 
-    });
+
+	
+	
+//Legend
+	 var dataset	= [ "Bullish", "Bearish", "Mean" , "Standard Deviation"]
+	 var color = [ "green", "red","yellow", "#6798c1"]
+	 
+	 var legend = svg.append("g")
+	 	  .attr("class", "legend")
+	 	  .attr("height", 100)
+	 	.attr("width", 100)
+	 	.attr('transform', 'translate(50,350)');
+
+      
+	     legend.selectAll('rect')
+	       .data(dataset)
+	       .enter()
+	       .append("rect")
+	 	  .attr("x", width - 330)
+	       .attr("y", function(d, i){ return i *  30;})
+	 	  .attr("width", 20)
+	 	  .attr("height", 5)
+	 	  .style("fill", function(d, i) { 
+	         var colorLine = color[i];
+	         return colorLine;
+	       });
+      
+	     legend.selectAll('text')
+	       .data(dataset)
+	       .enter()
+	       .append("text")
+	 	  .attr("x", width - 300)
+	       .attr("y", function(d, i){ return i *  30 + 9 ;})
+	 	  .text(function(d,i) {
+	         var text = dataset[i];
+	         return text;
+	       });
+		   
+		       });
+	 
+	
 </script>
 
   <div class="container">

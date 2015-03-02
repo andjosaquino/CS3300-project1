@@ -149,6 +149,7 @@
               // + act as number
               d.high = +d.High;
               d.low = +d.Low;
+			  d.open = +d.Open;
               d.close = +d.Close;
               d.volume = +d.Volume;
           } 
@@ -200,7 +201,7 @@
       /*Date Scale (based on startDate and Enddate)
       */
       var data = Data.query.results.quote.reverse();
-      var margin = {top: 50, right: 100, bottom: 50, left:100},width = 1300,height = 600;
+      var margin = {top: 50, right: 100, bottom: 50, left:100},width = 1200,height = 600;
       
       var svg = d3.select('#canvas').append('svg')
         .attr('class', 'chart')
@@ -293,25 +294,15 @@
         .attr("stroke-width", 500)
         .attr("stroke", "yellow");
 		
-		
-	  svg.selectAll("stem")
-        .data(data)
-        .enter().append("svg:line")
-        .attr("x1", function(d) { return timeScale(d.date); })
-	    .attr("x2", function(d) { return timeScale(d.date); })
-        .attr("y1", function(d) { return priceScale(d.High);})
-        .attr("y2", function(d) { return priceScale(d.Low); })
-        .attr("stroke", "#c72a2a");
-		
 //Legend
-	 var dataset	= [ "High & Low", "Mean" , "Standard Deviation"]
-	 var color = [ "#c72a2a","yellow", "#6798c1"]
+	 var dataset	= [ "Bullish", "Bearish", "Mean" , "Standard Deviation"]
+	 var color = [ "green", "red","yellow", "#6798c1"]
 	 
 	 var legend = svg.append("g")
 	 	  .attr("class", "legend")
 	 	  .attr("height", 100)
 	 	.attr("width", 100)
-	 	.attr('transform', 'translate(50,350)');
+	 	.attr('transform', 'translate(50,370)');
 
       
 	     legend.selectAll('rect')
@@ -338,6 +329,24 @@
 	         return text;
 	       });
 	 
+    
+	     var blocks = svg.selectAll('rect')
+	       .data(data).enter().append('rect')
+	       .attr("x", function(d) { return timeScale(d.date); })
+	       .attr("y", function(d) {return priceScale(d3.max([d.open, d.close]));})     
+	       .attr("height", function(d) { return priceScale(d3.min([d.open, d.close]))-priceScale(d3.max([d.open, d.close]));})
+	       . attr("width", function(d) { return 0.5 * (width - 2 * margin.right)/Data.query.count; })
+	       .attr("fill",function(d) { return d.open > d.close ? "red" : "green" ;}); 
+    
+    
+
+	       var blocklines = svg.selectAll('line.stem')
+	       .data(data).enter().append('line')
+	       .attr("x1", function(d) { return timeScale(d.date) + 0.25 * (width - 2 * margin.right)/ Data.query.count;})
+	           .attr("x2", function(d) { return timeScale(d.date) + 0.25 * (width - 2 * margin.right)/ Data.query.count;})       
+	           .attr("y1", function(d) { return priceScale(d.high);})
+	           .attr("y2", function(d) { return priceScale(d.low); })
+	           .attr("stroke", function(d){ return d.open > d.close ? "red" : "green"; });
 	
     });
 </script>
