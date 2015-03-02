@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <!-- Basic Page Needs
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta charset="utf-8">
+  <title>Your page title here :)</title>
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <!-- Mobile Specific Metas
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- FONT
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+
+  <!-- CSS
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="stylesheet" href="css/normalize.css">
+  <link rel="stylesheet" href="css/skeleton.css">
+
+  <!-- Favicon
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="icon" type="image/png" href="images/favicon.png">
+
+  <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  
+  <style>
+  /* put a border around the svg element so we can see the coordinate system better. */
+  svg { border: solid white 0px; }
+  h3 {text-align:center;}
+    
+  .axis path,
+  .axis line {
+    fill: none;
+    stroke: #595959;
+  }
+  .x.axis path {
+    display: none;
+  }
+  .line {
+    fill: none;
+    stroke-width: 1.7px;
+  }
+  .area {
+      fill: lightsteelblue;
+      stroke-width: 0;
+  }
+  .overlay {
+    fill: none;
+    pointer-events: all;
+  }
+  .range {
+      fill: #eee;
+      opacity: .4;
+      pointer-events: all;
+  }
+  .canvas{
+    margin: 0em auto 0em auto;
+  }
+  
+  .grid .tick {
+      stroke: #4e4e4e;
+      opacity: 0.7;
+  }
+  .grid path {
+        stroke-width: 0;
+  }
+  </style>
+
+</head>
+<body>
+
+  <!-- Primary Page Layout
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+
+  <section style="background-color: #111111; margin: 0 0 10% 0; padding-top: 2%;">
+    <div class="container" style="color:white">
+      <div class="row">
+        <div class="three columns">
+          <p>About<p>
+        </div>
+        <div class="three columns">
+          <p>Dataset</p>
+        </div>
+        <div class="three columns">
+          <p>Team</p>
+        </div>
+        <div class="three columns">
+          <p>Lorem</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="row">
+        <div class="one-half column" style="margin-top: 10%; color:white;">
+          <h4><b>Apple's Business Statistics</b></h4>
+          <p>Within the past couple of years, Apple lead the movement towards consumer
+          technology in the United States. However, business-wise, their stock information
+          shares an enlightening perspective on Apple's success.</p>
+
+
+        </div>
+      </div>
+    </div>
+
+
+      <!-- The SVG element will go in here. Cyndi, here is everything
+      I grabbed from the project.html file.-->
+        <div id="canvas"></div>
+
+  </section>
+      <script>
+    //max time period from yahoo is 15 months
+    //var startDate = "2012-09-19";
+    var startDate = "2013-09-19";
+    var endDate = "2014-02-11";
+    var symbol = "AAPL";
+    var inputStockURL = "http://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.historicaldata%20where%20symbol%20%3D%20%22"+symbol+"%22%20and%20startDate%20%3D%20%22"+startDate+"%22%20and%20endDate%20%3D%20%22"+endDate+"%22&format=json&diagnostics=true&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys"; 
+    var parseDate = d3.time.format("%Y-%m-%d").parse;
+    var Data; 
+    var testxScale;
+    //sma5 Storage
+    var sma5=[];
+    //PADDING VALUES
+    var bottom_pad = 100;
+    //Empty date list
+    var dateList = [];
+	
+    //available info includes Adj_Close, Close, Date, High, Low, Open, Symbol, Volume, date
+    d3.json(inputStockURL, function(error, data){
+      Data = data;
+      data.query.results.quote.forEach(
+          function(d) {
+              //console.log(parseDate(d.Date));
+              d.date = parseDate(d.Date);
+              dateList.push(d.date);
+              // + act as number
+              d.high = +d.High;
+              d.low = +d.Low;
+              d.close = +d.Close;
+              d.open = +d.Open;
+              d.volume = +d.Volume;
+          } 
+      );
+	  
+
+    //console.log("DATE LIST IS "+dateList.length+" LONG")
+
+    for(var i=0; i<Data.query.count; i+=5){
+      temp = {};
+      temp.mean= 0;
+      temp.stdDev= 0;
+      temp.meanDate= new Date();
+      temp.meanDate=dateList[(i/5)*5];
+      var sum=0;
+      if (i >= 5){
+        for(var j=0; j<5; j++){
+          sum += Data.query.results.quote[i-j].close;
+        }
+        temp.mean= sum/ 5.0;
+      }else{
+        temp.mean = Data.query.results.quote[i].close;
+      }
+
+
+      var meanDifferences= 0;
+
+      if ( i >= 5){
+        for(var j=0; j<5; j++){
+          meanDifferences+= (temp.mean-Data.query.results.quote[i-j].close) *
+                    (temp.mean-Data.query.results.quote[i-j].close);
+        }
+        temp.stdDev= Math.sqrt(meanDifferences/ 5.0);
+      }
+      else{
+        temp.stdDev= Math.sqrt((temp.mean-Data.query.results.quote[i].close)*(temp.mean-Data.query.results.quote[i].close));
+      }
+      //console.log(temp.stdDev + temp.mean);
+      sma5.push(temp);
+    }
+
+
+    sma5.forEach(
+        function(d) {
+           d.mean = +d.mean;
+		   d.stdDev = +d.stdDev;
+          } 
+    )
+
+
+      /*Daily High and Low
+      */
+      /*SMA(20) Close Price- 20 day simple moving average
+      Average the closing prices in 20 day increments
+      */
+      /*SMA(20) Close Price std calc
+      */
+      /*Daily Volume
+      */
+      /*SMA(20) Voulme- 20 day simple moving average
+      Average the Volume in 20 day increments
+      */
+      /*Date Scale (based on startDate and Enddate)
+      */
+      var data = Data.query.results.quote.reverse();
+      var margin = {top: 50, right: 100, bottom: 50, left:100},width = 1300,height = 600;
+      
+      var svg = d3.select('#canvas').append('svg')
+        .attr('class', 'chart')
+        .attr('width', width)
+        .attr('height', height)
+        .append('g')
+        .attr('transform', 'translate(' + margin.left + ', ' + margin.top + ')');
+      
+	  var timeScale = d3.time.scale()
+      .domain(d3.extent(data, function(d) {
+            return d.date; }))
+      .range([0,width - margin.top - margin.right]);
+      //testxScale = timeScale;
+      /*Price Scale (based on maxHigh and minLow)
+      */
+      var priceScale = d3.scale.linear()
+      .domain([ d3.min(data, function(d) { return d.low - bottom_pad}), 
+            d3.max(data, function(d) { return d.high; })
+        ])
+        .range([height - margin.top - margin.bottom,0]);
+      
+      //Axis
+      var xAxis = d3.svg.axis()
+          .scale(timeScale)
+          .orient('bottom')
+          .tickFormat(d3.time.format('%b %Y'))
+          .tickSize(5)
+          .tickPadding(8);
+		  
+      var yAxis = d3.svg.axis()
+          .scale(priceScale)
+          .orient('left')
+          .tickSize(2)
+          .tickPadding(8);
+		  
+	  /*var area = d3.svg.area()
+	      .x(function(d) { return timeScale(d.date); })
+	      .y0(height)
+	      .y1(function(d) { return priceScale(d.low); }); */
+
+    var area = d3.svg.area()
+        .interpolate("basis")
+        .x(function(d){ return timeScale(d.meanDate); })    
+        .y(function (d) { return priceScale(d.mean + 2 * d.stdDev); })
+        .y0(function (d) { return priceScale(d.mean - 2 * d.stdDev); });
+
+      
+      //High and Low Lines
+      var lineHigh = d3.svg.line()
+          .interpolate("basis")
+          .x(function(d) { return timeScale(d.date); })
+          .y(function(d) { return priceScale(d.high); });
+      
+      var lineLow = d3.svg.line()
+          .interpolate("basis")
+          .x(function(d) { return timeScale(d.date); })
+          .y(function(d) { return priceScale(d.low); });
+		  
+      var smaMean = d3.svg.line()
+          .interpolate("basis")
+          .x(function(d) { console.log(); return timeScale(d.meanDate); })
+          .y(function(d) { return priceScale(d.mean); });
+		  
+	    /*var smaSD_upper = d3.svg.line()
+	        .interpolate("basis")
+	        .x(function(d) { return timeScale(d.meanDate); })
+	        .y(function(d) { return priceScale(d.mean + d.stdDev); }); /*
+	  
+	  /*var smaSD_lower = d3.svg.line()
+         .interpolate("basis")
+         .x(function(d) { return timeScale(d.meanDate); })
+         .y(function(d) { return priceScale(d.mean - d.stdDev); }); */ 
+	  
+		
+	  	function gridlines_x() {        
+	  	    return d3.svg.axis()
+	  	        .scale(timeScale)
+	  	         .orient("bottom")
+	  	         .ticks(10)
+	  	}
+
+	  	function gridlines_y() {        
+	  	    return d3.svg.axis()
+	  	        .scale(priceScale)
+	  	        .orient("left")
+	  	        .ticks(17)
+	  	}
+        
+      svg.append('g')
+          .attr('class', 'x axis')
+          .attr('transform', 'translate(0, ' + (height - margin.top - margin.bottom) + ')')
+          .call(xAxis)
+          .selectAll("text")
+            .attr("fill", "white")
+            .attr("font-size", ".8em")
+            .attr("transform","rotate(0)")
+            .style("text-anchor", "start");
+			
+      svg.append('g')
+            .attr('class', 'y axis')
+            .call(yAxis)
+            .selectAll("text")
+              .attr("font-size", ".7em")
+              .attr("fill", "white")
+        
+	
+	 svg.append("g")         
+        .attr("class", "grid")
+        .attr('transform', 'translate(0, ' + (height - margin.top - margin.bottom) + ')')
+        .call(gridlines_x()
+            .tickSize(-height, 0, 0)
+            .tickFormat("")
+        )
+
+    svg.append("g")         
+        .attr("class", "grid")
+        .call(gridlines_y()
+            .tickSize(-width, 0, 0)
+            .tickFormat("")
+        )
+		
+    /*svg.append("path")
+        .attr("class", "line")
+        .attr("d", lineHigh(data))
+        .attr("stroke-width", 1)
+        .attr("stroke", "#6798c1"); /*
+	  
+    /*svg.append("path")
+        .attr("class", "line")
+        .attr("d", lineLow(data))
+        .attr("stroke-width", 1)
+        .attr("stroke", "#c72a2a"); */ 
+		
+    svg.append("path")
+      .attr("d", smaMean(sma5))
+        .attr("class", "line")
+        .attr("stroke-width", 500)
+        .attr("stroke", "yellow");
+
+     /*svg.append("path")
+       .attr("d", smaSD_upper(sma5))
+         .attr("class", "line")
+         .attr("stroke-width", 500)
+         .attr("stroke", "yellow"); */
+		
+     /*svg.append("path")
+       .attr("d", smaSD_lower(sma5))
+         .attr("class", "line")
+         .attr("stroke-width", 500)
+         .attr("stroke", "yellow"); */
+
+    svg.append('path')
+      .attr('d', area(sma5))
+        .attr("class", "area")
+        .style('opacity','0.3');
+
+    
+    var blocks = svg.selectAll('rect')
+      .data(data).enter().append('rect')
+      .attr("x", function(d) { return timeScale(d.date); })
+      .attr("y", function(d) {return priceScale(d3.max([d.open, d.close]));})     
+      .attr("height", function(d) { return priceScale(d3.min([d.open, d.close]))-priceScale(d3.max([d.open, d.close]));})
+      . attr("width", function(d) { return 0.5 * (width - 2 * margin.right)/Data.query.count; })
+      .attr("fill",function(d) { return d.open > d.close ? "red" : "green" ;}); 
+    
+    
+
+      var blocklines = svg.selectAll('line.stem')
+      .data(data).enter().append('line')
+      .attr("x1", function(d) { return timeScale(d.date) + 0.25 * (width - 2 * margin.right)/ Data.query.count;})
+          .attr("x2", function(d) { return timeScale(d.date) + 0.25 * (width - 2 * margin.right)/ Data.query.count;})       
+          .attr("y1", function(d) { return priceScale(d.high);})
+          .attr("y2", function(d) { return priceScale(d.low); })
+          .attr("stroke", function(d){ return d.open > d.close ? "red" : "green"; });
+
+    });
+</script>
+
+  <div class="container">
+    <div class="row">
+      <div class="twelve columns" style="margin-bottom: 2em">
+        <h2><b>The Team</b></h2>
+      </div>
+    </div>
+    <div class="row">
+      <div class="three columns">
+        <p><b>Andrew Aquino</b><br>aja255<p>
+      </div>
+      <div class="three columns">
+        <p><b>Angel Rodriguez</b><br>adr68</p>
+      </div>
+      <div class="three columns">
+        <p><b>Cyndi Chin</b><br>cgc95</p>
+      </div>
+      <div class="three columns">
+        <p><b>Christopher McPherson</b><br>cjm274</p>
+      </div>
+    </div>
+  </div>
+
+<!-- End Document
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+</body>
+</html>
