@@ -96,8 +96,7 @@
         </div>
       </div>
     </div>
-      <!-- The SVG element will go in here. Cyndi, here is everything
-      I grabbed from the project.html file.-->
+      <!-- The SVG element will go in here. -->
         <div id="canvas"></div>
         <br>
         <br>
@@ -108,8 +107,8 @@
     <script>
 
       //Generating inputStockURL; Max date is 15 months.
-      var startDate = "2012-09-19";
-      var endDate = "2014-02-11";
+  var startDate = "2014-09-19";
+  var endDate = "2015-02-11";
       var symbol = "AAPL";
       var inputStockURL = "http://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.historicaldata%20where%20symbol%20%3D%20%22"+symbol+"%22%20and%20startDate%20%3D%20%22"+startDate+"%22%20and%20endDate%20%3D%20%22"+endDate+"%22&format=json&diagnostics=true&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys"; 
       var parseDate = d3.time.format("%Y-%m-%d").parse;
@@ -124,7 +123,7 @@
 
       //Constants for convenience
       //--Padding
-      var bottom_pad = 100;
+      var bottom_pad = 10;
 
       //--Date Storage for sma calculation
       var dateList = [];
@@ -133,6 +132,7 @@
         Adj_Close, Close, Date, High, Low, Open, Symbol, Volume, date*/
       d3.json(inputStockURL, function(error, data){
         Data = data;
+		Data.query.results.quote.reverse();
         data.query.results.quote.forEach(
           function(d) {
             d.date = parseDate(d.Date);
@@ -140,17 +140,18 @@
             // (+) Denotes conversion to number
             d.high = +d.High;
             d.low = +d.Low;
-		        d.open = +d.Open;
+     		    d.open = +d.Open;
             d.close = +d.Close;
-            d.volume = +d.Volume;
-          } 
+
+          }
         );
 
       //console.log("DATE LIST IS "+dateList.length+" LONG")
+
       //For loop that generates all the 5 day averages from the data
       //repository
 
-      for(var i=0; i<350; i+=5){
+      for(var i=5; i<dateList.length; i++){
         //Setting up temporary dictionary for SMA mean.
         temp = {};
         temp.mean= 0;
@@ -158,7 +159,7 @@
         temp.meanDate= new Date();
         temp.meanDate=dateList[(i/5)*5];
 
-        var sum=0; //Initializing sum 
+        var sum=0; //Initializing sum
 
         //Start averaging within 5 day increments except for day 0.
         if (i >= 5){
@@ -188,11 +189,13 @@
         sma5.push(temp);
       }
 
-      //Initializing data for svg graph.
-      var data = Data.query.results.quote.reverse(); //Reverse Data
-      var margin = {top: 50, right: 100, bottom: 50, left:100},
-                    width = 1200,
-                    height = 600;
+
+	    //Initializing data for svg graph.
+	  var margin = {top: 50, right: 100, bottom: 50, left:100},
+              width = 1200,
+              height = 600;	
+			 
+	  var data = Data.query.results.quote.reverse();
       
       //Adjusting presentation scale of the canvas that will hold SVG.
       var svg = d3.select('#canvas').append('svg')
@@ -210,8 +213,8 @@
     
       //Price Scale (based on maxHigh and minLow)
       var priceScale = d3.scale.linear()
-      .domain([ d3.min(data, function(d) { return d.low - bottom_pad}), 
-            d3.max(data, function(d) { return d.high; })])
+      .domain([ d3.min(data, function(d) { return d.low - bottom_pad;}), 
+            d3.max(data, function(d) { return d.high + bottom_pad; })])
         .range([height - margin.top - margin.bottom,0]);
       
       //Generating the X-Axis
@@ -246,11 +249,13 @@
       //Generating line for smaMean
       var smaMean = d3.svg.line()
           .interpolate("basis")
-          .x(function(d) { console.log(); return timeScale(d.meanDate); })
+          .x(function(d) { 
+			  console.log(); 
+			  return timeScale(d.meanDate); })
           .y(function(d) { return priceScale(d.mean); });
 		  
-		  //Generating line/region for stdDevArea
-	    var stdDevArea = d3.svg.area()
+	  //Generating line/region for stdDevArea
+	  var stdDevArea = d3.svg.area()
 	      .interpolate('basis')
 	      .x (function (d) { return timeScale(d.meanDate); })
 	      .y0(function (d) { return priceScale(d.mean - d.stdDev*2); })
@@ -273,7 +278,7 @@
           .attr("transform","rotate(0)")
           .style("text-anchor", "start");
 
-			//Appending yAxis to the canvas
+	  //Appending yAxis to the canvas
       svg.append('g')
         .attr('class', 'y axis')
         .call(yAxis)
@@ -289,7 +294,7 @@
           .attr("stroke", "yellow");
 		      
       //Constants for convenience [Legend]
-	    var dataset	= [ "Bullish", "Bearish", "Mean" , "Standard Deviation"]
+	  var dataset	= [ "Bullish", "Bearish", "Mean" , "Standard Deviation"]
 	    var color = [ "green", "red","yellow", "#6798c1"]
 	 
       //Initializing legend
@@ -345,6 +350,7 @@
     });
 
 </script>
+	
 
   <div class="container">
     <div class="row">
