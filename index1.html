@@ -58,8 +58,7 @@
       pointer-events: all;
   }
   .canvas{
-    border:1px solid #000000;
-    margin-bottom: 100px;
+    margin: 0em auto 0em auto;
   }
   
   .grid .tick {
@@ -123,19 +122,21 @@
     var parseDate = d3.time.format("%Y-%m-%d").parse;
     var Data; 
     var testxScale;
+    //sma5 Storage
     var sma5=[];
     //PADDING VALUES
     var bottom_pad = 100;
-	
-	
-	
+    //Empty date list
+    var dateList = [];
 	
     //available info includes Adj_Close, Close, Date, High, Low, Open, Symbol, Volume, date
     d3.json(inputStockURL, function(error, data){
       Data = data;
       data.query.results.quote.forEach(
           function(d) {
+              //console.log(parseDate(d.Date));
               d.date = parseDate(d.Date);
+              dateList.push(d.date);
               // + act as number
               d.high = +d.High;
               d.low = +d.Low;
@@ -144,36 +145,51 @@
           } 
       );
 	  
-    Data.query.results.quote.reverse();
-    for(var i=0; i<70; i++){
-      sma5[i]= {};
-      sma5[i].mean= 0;
-      sma5[i].meanDate= new Date();
-      sma5[i].meanDate.setDate(Data.query.results.quote[i*5+2].date.getDate());
+
+    console.log("DATE LIST IS "+dateList.length+" LONG")
+
+    for(var i=0; i<350; i+=5){
+      temp = {};
+      temp.mean= 0;
+      temp.stdDev= 0;
+      temp.meanDate= new Date();
+      temp.meanDate=dateList[(i/5)*5];
       var sum=0;
-      for(var j=0; j<5; j++){
-        var index= i*5+j;
-        sum= sum+ Data.query.results.quote[index].close;
+      if (i >= 5){
+        for(var j=0; j<5; j++){
+          sum += Data.query.results.quote[i-j].close;
+        }
+        temp.mean= sum/ 5.0;
+      }else{
+        temp.mean = Data.query.results.quote[i].close;
       }
-      sma5[i].mean= sum/ 5.0;
-    }
-    for(var i=0; i<70; i++){
-      sma5[i].stdDev= 0;
+
+
       var meanDifferences= 0;
-      for(var j=0; j<5; j++){
-        var index= i*5+j;
-        meanDifferences+= (sma5[i].mean-Data.query.results.quote[index].close) *
-                  (sma5[i].mean-Data.query.results.quote[index].close);
+
+      if ( i >= 5){
+        for(var j=0; j<5; j++){
+          meanDifferences+= (temp.mean-Data.query.results.quote[i-j].close) *
+                    (temp.mean-Data.query.results.quote[i-j].close);
+        }
+        temp.stdDev= Math.sqrt(meanDifferences/ 5.0);
       }
-      sma5[i].stdDev= Math.sqrt(meanDifferences/ 5.0);
+      else{
+        temp.stdDev= Math.sqrt((temp.mean-Data.query.results.quote[i].close)*(temp.mean-Data.query.results.quote[i].close));
+      }
+      console.log(temp.stdDev + temp.mean);
+      sma5.push(temp);
     }
-	
+
+
     sma5.forEach(
         function(d) {
            d.mean = +d.mean;
 		   d.stdDev = +d.stdDev;
           } 
     )
+
+
       /*Daily High and Low
       */
       /*SMA(20) Close Price- 20 day simple moving average
@@ -189,9 +205,7 @@
       /*Date Scale (based on startDate and Enddate)
       */
       var data = Data.query.results.quote.reverse();
-      var margin = {top: 50, right: 100, bottom: 50, left:100},
-        width = 1300,
-        height = 800;
+      var margin = {top: 50, right: 100, bottom: 50, left:100},width = 1300,height = 600;
       
       var svg = d3.select('#canvas').append('svg')
         .attr('class', 'chart')
@@ -245,19 +259,19 @@
 		  
       var smaMean = d3.svg.line()
           .interpolate("basis")
-          .x(function(d) { return timeScale(d.meanDate); })
+          .x(function(d) { console.log(); return timeScale(d.meanDate); })
           .y(function(d) { return priceScale(d.mean); });
 		  
-	  // var smaSD_upper = d3.svg.line()
-	  //           .interpolate("basis")
-	  //           .x(function(d) { return timeScale(d.meanDate); })
-	  //           .y(function(d) { return priceScale(d.mean + d.stdDev); });
-	  //
-	  // var smaSD_lower = d3.svg.line()
-	  //           .interpolate("basis")
-	  //           .x(function(d) { return timeScale(d.meanDate); })
-	  //           .y(function(d) { return priceScale(d.mean - d.stdDev); });
-	  //
+	    var smaSD_upper = d3.svg.line()
+	        .interpolate("basis")
+	        .x(function(d) { return timeScale(d.meanDate); })
+	        .y(function(d) { return priceScale(d.mean + d.stdDev); });
+	  
+	  var smaSD_lower = d3.svg.line()
+         .interpolate("basis")
+         .x(function(d) { return timeScale(d.meanDate); })
+         .y(function(d) { return priceScale(d.mean - d.stdDev); });
+	  
 		
 	  	function gridlines_x() {        
 	  	    return d3.svg.axis()
@@ -323,25 +337,18 @@
         .attr("class", "line")
         .attr("stroke-width", 500)
         .attr("stroke", "yellow");
-		
-		
-    // svg.append("path")
-    //   .attr("d", smaSD_upper(sma5))
-    //     .attr("class", "line")
-    //     .attr("stroke-width", 500)
-    //     .attr("stroke", "yellow");
-		
-    // svg.append("path")
-    //   .attr("d", smaSD_lower(sma5))
-    //     .attr("class", "line")
-    //     .attr("stroke-width", 500)
-    //     .attr("stroke", "yellow");
-	  
 
-	
-
-	  
-	
+     svg.append("path")
+       .attr("d", smaSD_upper(sma5))
+         .attr("class", "line")
+         .attr("stroke-width", 500)
+         .attr("stroke", "yellow");
+		
+     svg.append("path")
+       .attr("d", smaSD_lower(sma5))
+         .attr("class", "line")
+         .attr("stroke-width", 500)
+         .attr("stroke", "yellow");
     });
 </script>
 

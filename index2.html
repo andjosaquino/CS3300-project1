@@ -129,6 +129,7 @@
       );
 	  
     Data.query.results.quote.reverse();
+
     for(var i=0; i<70; i++){
       sma5[i]= {};
       sma5[i].mean= 0;
@@ -137,10 +138,11 @@
       var sum=0;
       for(var j=0; j<5; j++){
         var index= i*5+j;
-        sum= sum+ Data.query.results.quote[index].close;
+        sum += Data.query.results.quote[index].close;
       }
       sma5[i].mean= sum/ 5.0;
     }
+
     for(var i=0; i<70; i++){
       sma5[i].stdDev= 0;
       var meanDifferences= 0;
@@ -159,31 +161,31 @@
 		   d.meanDate = +d.meanDate;
           } 
     )
-      /*Daily High and Low
-      */
-      /*SMA(20) Close Price- 20 day simple moving average
-      Average the closing prices in 20 day increments
-      */
-      /*SMA(20) Close Price std calc
-      */
-      /*Daily Volume
-      */
-      /*SMA(20) Voulme- 20 day simple moving average
-      Average the Volume in 20 day increments
-      */
-      /*Date Scale (based on startDate and Enddate)
-      */
-      var data = Data.query.results.quote.reverse();
-      var margin = {top: 50, right: 50, bottom: 200, left:100},
-        width = 1480,
-        height = 620;
+    /*Daily High and Low
+    */
+    /*SMA(20) Close Price- 20 day simple moving average
+    Average the closing prices in 20 day increments
+    */
+    /*SMA(20) Close Price std calc
+    */
+    /*Daily Volume
+    */
+    /*SMA(20) Voulme- 20 day simple moving average
+    Average the Volume in 20 day increments
+    */
+    /*Date Scale (based on startDate and Enddate)
+    */
+    var data = Data.query.results.quote.reverse();
+    var margin = {top: 50, right: 50, bottom: 200, left:100},
+      width = 1480,
+      height = 620;
       
-      var svg = d3.select('#canvas').append('svg')
-        .attr('class', 'chart')
-        .attr('width', width)
-        .attr('height', height)
-        .append('g')
-        .attr('transform', 'translate(' + margin.left + ', ' + margin.top + ')');
+    var svg = d3.select('#canvas').append('svg')
+      .attr('class', 'chart')
+      .attr('width', width)
+      .attr('height', height)
+      .append('g')
+      .attr('transform', 'translate(' + margin.left + ', ' + margin.top + ')');
       
 	  var timeScale = d3.time.scale()
       .domain(d3.extent(data, function(d) {
@@ -220,12 +222,12 @@
       
       var lineLow = d3.svg.line()
           .interpolate("basis")
-          .x(function(d) { return timeScale(d.date); })
+          .x(function(d) { console.log(d.date); return timeScale(d.date); })
           .y(function(d) { return priceScale(d.low); });
 		  
       var smaMean = d3.svg.line()
           .interpolate("basis")
-          .x(function(d) { return timeScale(d.meanDate); })
+          .x(function(d) { console.log(d.meanDate); return timeScale(d.meanDate); })
           .y(function(d) { return priceScale(d.mean); });
         
       svg.append('g')
